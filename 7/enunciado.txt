@@ -1,0 +1,40 @@
+Trabalho de Criptoanálise — Grupo 7
+============================================================
+
+Integrantes: Luísa Carvalho Böhm, Murilo Costa Salem, Henrique dos Reis
+
+Como criptoanalista no Biuro Szyfrów, você interceptou uma mensagem confidencial
+cifrada em trânsito. Para decifrá-la, você precisa recuperar a chave de decodificação
+e passar por múltiplas camadas de proteção.
+
+Você tem em mãos os seguintes arquivos:
+  • message.en              — a mensagem secreta cifrada
+  • key_for_message.en      — a chave de decifração da mensagem, protegida por criptografia de chave pública
+  • key_public.en           — a chave pública correspondente, protegida por criptografia simétrica
+  • key_for_rsa_public.hash — resumo criptográfico (hash) da senha de acesso à chave pública
+
+Um agente de campo conseguiu recuperar o início da senha: "pe"
+O restante da senha e todos os algoritmos, modos de operação, tamanhos de chave e
+codificações de dados (encodings) utilizados em cada arquivo devem ser descobertos por você.
+
+Sua missão: recuperar e decifrar a mensagem original.
+
+Ao concluir, entregue um único PDF com:
+  1. Todos os procedimentos executados, na ordem correta,
+     de forma que outra pessoa consiga replicá-los do zero.
+  2. A senha descoberta, os algoritmos e codificações identificados, e a mensagem decifrada (completa).
+  3. Pelo menos dois caminhos tentados que NÃO funcionaram
+     e a explicação técnica do motivo da falha.
+  4. Se desenvolveu scripts para auxiliar na solução, inclua o código-fonte completo.
+
+LINKS PARA DOWNLOAD NÃO SERÃO ACEITOS. Envie todos os arquivos.
+
+ATENÇÃO: A mensagem decifrada contém os nomes dos integrantes
+do grupo. Entregas com nomes divergentes serão ANULADAS.
+
+Prazo de Entrega: 28/10/2026 às 23:59
+Apresentações: 29/10/2026 (qui, 13h30), 03/11/2026 (ter, 10h) e 05/11/2026 (qui, 13h30) — sala 251, Anglo
+
+Cada entrega correta até o prazo recebe bônus de até 50%,
+dividido pelo número de entregas corretas da turma.
+============================================================

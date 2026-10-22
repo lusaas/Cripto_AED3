@@ -1,0 +1,25 @@
+# Cada regra e aplicada separadamente a cada entrada do dicionario.
+# O prefixo "pe" e preservado; transformacoes afetam somente o sufixo.
+
+base
+lower_suffix
+upper_suffix
+capitalize_suffix
+leet_suffix
+reverse_suffix
+
+# Sufixos numericos com zeros iniciais incluidos.
+append_digits=1
+append_digits=2
+append_digits=3
+append_digits=4
+
+# Variacoes combinadas.
+leet_append_digits=1
+leet_append_digits=2
+capitalize_append_digits=1
+capitalize_append_digits=2
+
+# Anos e simbolos comuns.
+append_years=1990-2026
+append_symbols=!@#$%&*._-

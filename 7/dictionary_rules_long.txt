@@ -1,0 +1,19 @@
+# Busca prolongada: primeiro testa variacoes provaveis e depois acrescenta
+# todos os sufixos numericos de sete digitos (0000000 a 9999999).
+base
+lower_suffix
+upper_suffix
+capitalize_suffix
+leet_suffix
+reverse_suffix
+append_digits=1
+append_digits=2
+append_digits=3
+append_digits=4
+leet_append_digits=1
+leet_append_digits=2
+capitalize_append_digits=1
+capitalize_append_digits=2
+append_years=1990-2026
+append_symbols=!@#$%&*._-
+append_digits=7

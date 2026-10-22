@@ -1,0 +1,18 @@
+# Ferramentas externas e arquivos gerados pelo Hashcat
+.tools/
+kernels/
+
+# Binarios e artefatos de compilacao
+*.exe
+*.o
+*.obj
+
+# Caches do Python
+__pycache__/
+*.py[cod]
+
+# Arquivos temporarios e de sessao
+*.log
+*.potfile
+*.restore
+.pytest_cache/
