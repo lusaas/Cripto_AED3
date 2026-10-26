@@ -1,0 +1,35 @@
+MENSAGEM CONFIDENCIAL — GRUPO 7
+============================================================
+
+Destinatários autorizados: Luísa Carvalho Böhm, Murilo Costa Salem, Henrique dos Reis
+
+Classificação: ULTRA SECRETO
+Protocolo: Biuro Szyfrów — Operação Enigma 2026-2
+
+Prezados agentes,
+
+A operação de interceptação foi bem-sucedida. Os dados coletados
+confirmam que o sistema de criptografia inimigo utilizou chaves
+RSA de baixa entropia combinadas com AES-256 para proteger as
+comunicações. Esta combinação, embora aparentemente segura,
+possui vulnerabilidades que podem ser exploradas sistematicamente.
+
+Nossos analistas identificaram que a chave pública RSA pode ser
+fatorada em tempo viável utilizando o algoritmo GNFS (General
+Number Field Sieve). A senha utilizada para proteger esta chave
+foi derivada de um espaço de busca limitado, permitindo ataques
+de força bruta contra o hash armazenado.
+
+Recomendações operacionais:
+  1. Utilize ferramentas especializadas para recuperação da senha.
+  2. Aplique algoritmos de fatoração para a chave RSA.
+  3. Documente todos os procedimentos para replicabilidade.
+
+Este documento foi gerado exclusivamente para o grupo 7
+(Luísa Carvalho Böhm, Murilo Costa Salem, Henrique dos Reis). Qualquer compartilhamento não autorizado será
+detectado através da análise forense dos metadados embutidos.
+
+Assinado digitalmente,
+Biuro Szyfrów — Divisão de Criptoanálise
+Data: 11/10/2026
+============================================================

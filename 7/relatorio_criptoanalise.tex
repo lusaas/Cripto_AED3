@@ -1,0 +1,189 @@
+\documentclass[11pt,a4paper]{article}
+\usepackage[margin=2.1cm]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage[brazilian]{babel}
+\usepackage{lmodern}
+\DeclareUnicodeCharacter{2014}{\textemdash}
+\DeclareUnicodeCharacter{2013}{\textendash}
+\DeclareUnicodeCharacter{2022}{\textbullet}
+\usepackage{amsmath,amssymb,booktabs,array,xcolor,hyperref,fvextra,upquote}
+\hypersetup{colorlinks=true,linkcolor=blue,urlcolor=blue}
+\fvset{breaklines=true,breakanywhere=true}
+\sloppy
+\definecolor{darkblue}{HTML}{193A5E}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\commandblock}[1]{\begin{quote}\small\ttfamily #1\end{quote}}
+\setlength{\parskip}{0.6em}
+\setlength{\parindent}{0pt}
+\begin{document}
+
+\begin{center}
+{\LARGE\bfseries\color{darkblue} Relatório de Criptoanálise --- Grupo 7}\\[0.6em]
+{\large Recuperação completa da mensagem confidencial}\\[0.5em]
+Luísa Carvalho Böhm \textbullet{} Murilo Costa Salem \textbullet{} Henrique dos Reis\\
+25 de outubro de 2026
+\end{center}
+
+\begin{abstract}
+Este relatório descreve, na ordem em que foram executadas, a descoberta da senha de acesso à chave pública, a decifragem AES dessa chave, a fatoração do módulo RSA, a reconstrução da chave privada, a recuperação da senha da mensagem e a decifragem do texto final. Inclui parâmetros, comandos reproduzíveis, tentativas malsucedidas e o código integral do script desenvolvido para a reconstrução RSA.
+\end{abstract}
+
+\tableofcontents
+\newpage
+
+\section{Arquivos de entrada e ambiente}
+
+Os quatro arquivos fornecidos foram \code{key\_for\_rsa\_public.hash}, \code{key\_public.en}, \code{key\_for\_message.en} e \code{message.en}, todos no diretório \code{7/}. O enunciado informou que a senha do primeiro arquivo começava por \code{pe}. Os comandos abaixo partem da raiz do projeto, em Linux, com Hashcat 7.1.2, OpenSSL 3.5.5, Python 3 e a biblioteca Python \code{cryptography} 46.0.5. A busca com Hashcat utilizou uma NVIDIA GeForce RTX 5090, identificada como dispositivo 1 via OpenCL.
+
+Se o Hashcat ainda não estiver no projeto, obtenha e extraia a mesma versão antes da etapa de força bruta:
+\begin{Verbatim}[fontsize=\scriptsize]
+mkdir -p .tools
+curl -fL -o .tools/hashcat-7.1.2.7z \
+  https://github.com/hashcat/hashcat/releases/download/v7.1.2/hashcat-7.1.2.7z
+7z x -y .tools/hashcat-7.1.2.7z -o.tools
+\end{Verbatim}
+Para reconstruir a chave RSA em Python, instale \code{cryptography} se necessário. As demais ferramentas usadas nos comandos são OpenSSL, Docker, \code{xxd} e \code{7z}.
+
+\begin{center}
+\begin{tabular}{p{0.30\linewidth}p{0.61\linewidth}}
+\toprule
+Arquivo & Formato identificado \\
+\midrule
+\code{key\_for\_rsa\_public.hash} & SHA-256 em hexadecimal, 64 caracteres \\
+\code{key\_public.en} & Base64 de ciphertext AES, sem cabeçalho \code{Salted\_\_} \\
+\code{key\_for\_message.en} & Ciphertext RSA em hexadecimal, 48 bytes após conversão \\
+\code{message.en} & Base64 do formato \code{openssl enc} com cabeçalho \code{Salted\_\_} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\section{Descoberta da senha da chave pública}
+
+O hash informado é:
+\begin{Verbatim}[fontsize=\scriptsize]
+bfc15bd9ea199751e66ddb5e92344baed2f2fe67136e12eea18281ca52ff61fb
+\end{Verbatim}
+
+O modo 1400 do Hashcat corresponde a SHA-256 bruto; \code{-a 3} seleciona busca por máscara e \code{?l} representa letras minúsculas. A tentativa inicial exigiu exatamente seis letras minúsculas após \code{pe}:
+\begin{Verbatim}[fontsize=\scriptsize]
+./.tools/hashcat-7.1.2/hashcat.bin -m 1400 -a 3 \
+  7/key_for_rsa_public.hash 'pe?l?l?l?l?l?l' -O -w 3 -d 1 \
+  --potfile-disable --restore-disable
+\end{Verbatim}
+Ela terminou com \code{Status: Exhausted}: os $26^6=308.915.776$ candidatos foram testados sem correspondência. A máscara foi então ampliada para dez letras minúsculas após \code{pe}, ou 12 caracteres no total:
+\begin{Verbatim}[fontsize=\scriptsize]
+./.tools/hashcat-7.1.2/hashcat.bin -m 1400 -a 3 \
+  7/key_for_rsa_public.hash 'pe?l?l?l?l?l?l?l?l?l?l' \
+  -O -w 3 -d 1 --potfile-disable --restore-disable
+\end{Verbatim}
+O resultado foi \textbf{\code{petershorxxx}}. O espaço máximo dessa segunda máscara é $26^{10}=141.167.095.653.376$ candidatos. O Hashcat informou \code{Status: Cracked} após cerca de 12 segundos de ataque, com 193.476.689.920 candidatos contabilizados (0,14\% do espaço). Para conferir diretamente a senha descoberta:
+\begin{Verbatim}[fontsize=\scriptsize]
+printf %s petershorxxx | openssl dgst -sha256
+\end{Verbatim}
+O digest deve coincidir com o conteúdo de \code{key\_for\_rsa\_public.hash}.
+
+\section{Decifragem de \code{key\_public.en}}
+
+O conteúdo Base64 desse arquivo não começa com o cabeçalho \code{Salted\_\_}, de modo que a decifragem OpenSSL precisa da opção \code{-nosalt}. A combinação validada foi \textbf{AES-256-OFB}, codificação Base64, derivação legada de senha do OpenSSL com digest \textbf{SHA-256}, sem salt:
+\begin{Verbatim}[fontsize=\scriptsize]
+openssl enc -d -aes-256-ofb -a -nosalt -md sha256 \
+  -pass pass:petershorxxx -in 7/key_public.en -out 7/key_public.pem
+openssl pkey -pubin -in 7/key_public.pem -noout -text
+\end{Verbatim}
+O resultado é uma chave pública RSA de 382 bits, expoente $e=65.537$, em formato PEM \code{BEGIN PUBLIC KEY}. O módulo decimal é:
+\begin{Verbatim}[fontsize=\tiny]
+6524226763420669545131292616008021977421989716443706623412713108662980402279261528264966716400244521958486921252927
+\end{Verbatim}
+O SHA-256 da chave pública no formato DER é:
+\begin{Verbatim}[fontsize=\scriptsize]
+dbf1517e0312436f41a2b683b296a065937e868e72a65b7a7dfc445bff32f961
+\end{Verbatim}
+O aviso do OpenSSL sobre derivação obsoleta é esperado: esses arquivos foram produzidos com essa derivação; usar PBKDF2 mudaria a chave gerada.
+
+\section{Fatoração do módulo e reconstrução da chave privada}
+
+A ferramenta CADO-NFS 3.0.0, com o crivo geral de corpos numéricos (GNFS), fatorou o módulo. Para reproduzir com 20 threads e estado persistido em um diretório local:
+\begin{Verbatim}[fontsize=\scriptsize]
+mkdir -p .factor-rsa382
+RSA_N='652422676342066954513129261600802197742198971644370662341271'
+RSA_N="${RSA_N}3108662980402279261528264966716400244521958486921252927"
+docker run --name factor-rsa382 \
+  -v "$PWD/.factor-rsa382:/work" \
+  -e RSA_N="$RSA_N" \
+  registry.gitlab.inria.fr/cado-nfs/cado-nfs/factoring-full:latest \
+  /bin/bash -lc 'cado-nfs.py --workdir /work "$RSA_N" -t 20'
+\end{Verbatim}
+O tempo de parede registrado foi 935,176 segundos. Os fatores primos obtidos foram:
+\begin{Verbatim}[fontsize=\scriptsize]
+p = 2295796704686193901538758441276290741108975069288091220567
+q = 2841813802634779914926926270734337524686850991346453461081
+\end{Verbatim}
+O produto $pq$ foi comparado com o módulo da chave pública, e ambos os fatores foram verificados como primos pelo OpenSSL. A partir daí foi calculado $\lambda(n)=\operatorname{mmc}(p-1,q-1)$ e o expoente privado $d\equiv e^{-1}\pmod{\lambda(n)}$. O script integral está no Apêndice B. Para executá-lo em uma cópia limpa dos arquivos (sem as saídas pré-existentes):
+\begin{Verbatim}[fontsize=\scriptsize]
+python3 7/recover_rsa.py
+openssl pkey -in 7/key_private.pem -check -noout
+\end{Verbatim}
+O script grava \code{key\_private.pem} em PEM PKCS\#8 sem senha e com permissão 0600. O OpenSSL retornou \code{Key is valid}; a chave pública extraída da privada tem o mesmo SHA-256 DER indicado acima. A chave privada é um resultado sensível: mantenha suas permissões restritas.
+
+\section{Recuperação da senha da mensagem}
+
+O arquivo \code{key\_for\_message.en} contém 96 caracteres hexadecimais, que representam um bloco RSA de 48 bytes. O script converte o hexadecimal em bytes e aplica a operação privada com padding \textbf{PKCS\#1 v1.5}. A estrutura interna observada começa por \code{00 02}, contém bytes de preenchimento não nulos e um separador \code{00}. Após esse separador, o texto recuperado é:
+\begin{center}
+\Large\bfseries\code{kristennygaa}
+\end{center}
+O valor foi salvo em \code{7/key\_for\_message.txt}, sem quebra de linha. Este comando OpenSSL reproduz a decifragem a partir da chave privada já criada:
+\begin{Verbatim}[fontsize=\scriptsize]
+tr -d '\r\n' < 7/key_for_message.en | xxd -r -p > /tmp/key_for_message.bin
+openssl pkeyutl -decrypt -inkey 7/key_private.pem \
+  -in /tmp/key_for_message.bin -out /tmp/key_for_message_recovered.txt
+\end{Verbatim}
+Por padrão, a operação RSA acima usa PKCS\#1 v1.5. Compare o conteúdo do arquivo recuperado em \code{/tmp/} com \code{kristennygaa}.
+
+\section{Decifragem da mensagem final}
+
+Após conversão Base64, \code{message.en} começa com \code{Salted\_\_}, cabeçalho do formato \code{openssl enc} que inclui um salt aleatório. Testes com AES e diferentes derivações produziram um único texto UTF-8 inteiramente legível: \textbf{AES-256-OFB}, Base64, salt embutido, derivação legada OpenSSL com digest \textbf{SHA-256}. O comando é:
+\begin{Verbatim}[fontsize=\scriptsize]
+openssl enc -d -aes-256-ofb -a -md sha256 \
+  -pass file:7/key_for_message.txt \
+  -in 7/message.en -out 7/message.dec.txt
+\end{Verbatim}
+O texto final contém exatamente os nomes Luísa Carvalho Böhm, Murilo Costa Salem e Henrique dos Reis, conforme exigido. O SHA-256 do arquivo UTF-8 recuperado é:
+\begin{Verbatim}[fontsize=\scriptsize]
+674d3ec5a364f98594e4edf2684680fc348e76eefa78ab8185b9b772d6148b7e
+\end{Verbatim}
+O Apêndice A contém a mensagem integral, com todas as linhas preservadas.
+
+\section{Caminhos testados que não funcionaram}
+
+\begin{enumerate}
+\item \textbf{Máscara com seis letras após \code{pe}.} O Hashcat testou todo o espaço de 308.915.776 possibilidades e informou \code{Exhausted}. Falhou porque a senha real possui dez letras após \code{pe}; nenhuma senha de oito caracteres naquela máscara poderia produzir o hash alvo.
+\item \textbf{Aplicação da chave pública ao bloco RSA.} A tentativa \code{openssl pkeyutl -verifyrecover -pubin} com padding PKCS\#1 v1.5 retornou \code{invalid padding}. Usando a operação pública sem padding, o resultado foi um bloco binário sem a senha. Tecnicamente, o ciphertext deste arquivo foi recuperado pela operação com o expoente \emph{privado} e padding PKCS\#1 v1.5; a operação pública aplica o expoente errado para essa inversão.
+\item \textbf{Decifragem de \code{key\_public.en} como arquivo OpenSSL com salt.} A tentativa com \code{openssl enc -d -aes-256-cbc -a -pbkdf2} retornou \code{bad magic number}: os bytes decodificados não começam por \code{Salted\_\_}. Esse erro evidencia a ausência do cabeçalho esperado; o modo AES, a derivação e o uso de salt também não coincidem com os parâmetros corretos.
+\end{enumerate}
+
+\section{Resumo dos parâmetros encontrados}
+\begin{center}
+\begin{tabular}{p{0.30\linewidth}p{0.61\linewidth}}
+\toprule
+Camada & Resultado \\
+\midrule
+Senha de \code{key\_public.en} & \code{petershorxxx}; SHA-256 bruto no arquivo de hash \\
+\code{key\_public.en} & AES-256-OFB; Base64; sem salt; KDF legado do OpenSSL com SHA-256 \\
+\code{key\_for\_message.en} & RSA de 382 bits; ciphertext hexadecimal; padding PKCS\#1 v1.5 \\
+Senha recuperada para a mensagem & \code{kristennygaa}, 12 bytes ASCII \\
+\code{message.en} & AES-256-OFB; Base64; salt no cabeçalho \code{Salted\_\_}; KDF legado do OpenSSL com SHA-256 \\
+Texto final & UTF-8; reproduzido integralmente no Apêndice A \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+\appendix
+\section{Mensagem decifrada completa}
+\VerbatimInput[fontsize=\scriptsize]{message.dec.txt}
+
+\section{Código-fonte integral do script RSA desenvolvido}
+O arquivo abaixo é o mesmo \code{recover\_rsa.py} utilizado nas etapas 4 e 5. O projeto também contém ferramentas didáticas preexistentes, como \code{hashcat\_python.py} e \code{dictionary\_rules.c}; elas não foram executadas para obter os resultados apresentados neste relatório.
+\VerbatimInput[fontsize=\scriptsize]{recover_rsa.py}
+
+\end{document}

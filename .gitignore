@@ -16,3 +16,14 @@ __pycache__/
 *.potfile
 *.restore
 .pytest_cache/
+
+# Estado local da fatoração e saídas auxiliares do LaTeX
+.factor-rsa382/
+*.aux
+*.out
+*.toc
+
+# Chaves recuperadas e arquivos intermediários da decifragem
+7/key_private.pem
+7/key_for_message.txt
+7/key_for_message.dec
