@@ -16,10 +16,6 @@ plt.figure(figsize=(10, 6))
 plt.plot(caracteres, estimativa, marker='s', color='red', linestyle='-', linewidth=2, label='Estimativa na GPU')
 plt.plot(caracteres[:10], decorrido[:10], marker='o', color='blue', linestyle='-', linewidth=2, label='Tempo Decorrido Real')
 
-# Nota sobre o ponto em 12 caracteres (encontrou antecipadamente)
-plt.annotate('Encontrou a senha', xy=(12, 18), xytext=(9, 40),
-             arrowprops=dict(facecolor='black', shrink=0.05, width=1, headwidth=6))
-
 plt.yscale('log')
 plt.xticks(caracteres)
 plt.title('Tempo de Busca de Senha vs Comprimento (Escala Logarítmica)')
